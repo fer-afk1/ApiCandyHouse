@@ -7,7 +7,7 @@ const PORT = 3000;
 app.use(express.json());
 
 // Conexión a MongoDB Atlas 
-const MONGO_URI = 'mongodb+srv://fertorres11188_db_user:8W1No1XX9Rw9NHyv@clustercandy.56wg65p.mongodb.net/candyhouse?appName=ClusterCandy';
+const MONGO_URI = 'mongodb+srv://fertorres11188_db_user:1234@clustercandy.56wg65p.mongodb.net/candyhouse?appName=ClusterCandy';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('Conectado a MongoDB Atlas'))
