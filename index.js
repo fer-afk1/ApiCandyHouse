@@ -33,12 +33,10 @@ const Dulce = mongoose.model('Dulce', dulceSchema);
 
 // Modelo de Historial de Movimientos
 const historialSchema = new mongoose.Schema({
-    fecha:      { type: Date, default: Date.now },
-    tipo:       { type: String, enum: ['Venta', 'Surtido', 'Ajuste'], required: true },
-    dulceId:    { type: Number, required: true },
-    nombre:     { type: String, required: true },
-    cantidad:   { type: Number, required: true },
-    detalle:    { type: String }
+    producto:  { type: String, required: true },
+    accion:    { type: String, enum: ['Venta', 'Surtido', 'Ajuste'], required: true },
+    cantidad:  { type: String, required: true },
+    fecha:     { type: String, required: true }
 });
 
 const Historial = mongoose.model('Historial', historialSchema);
@@ -171,11 +169,11 @@ app.put('/api/dulces/:id', async (req, res) => {
         if (req.body.existencia !== undefined && existenciaNueva !== existenciaAnterior) {
             const diferencia = existenciaNueva - existenciaAnterior;
             await Historial.create({
-                tipo:     'Ajuste',
-                dulceId:  id,
-                nombre:   dulce.nombre,
-                cantidad: Math.abs(diferencia),
-                detalle:  `Ajuste manual: ${existenciaAnterior} → ${existenciaNueva} (${diferencia > 0 ? '+' : ''}${diferencia})`
+                producto: dulce.nombre,
+                accion:   'Ajuste',
+                cantidad: `${existenciaNueva} pz`,
+                fecha:    new Date().toLocaleDateString('es-MX')
+
             });
         }
 
@@ -229,11 +227,10 @@ app.post('/api/ventas', async (req, res) => {
         );
 
         await Historial.create({
-            tipo:     'Venta',
-            dulceId,
-            nombre:   dulce.nombre,
-            cantidad,
-            detalle:  `Venta de ${cantidad} unidad(es). Existencia: ${existenciaActual} → ${nuevaExistencia}`
+            producto: dulce.nombre,
+            accion: 'Venta',
+            cantidad: `-${cantidad} pz`,
+            fecha: new Date().toLocaleDateString('es-MX')
         });
 
         res.json({
@@ -330,18 +327,17 @@ app.post('/api/compras/confirmar', async (req, res) => {
             );
 
             await Historial.create({
-                tipo:     'Surtido',
-                dulceId:  item.dulceId,
-                nombre:   dulce.nombre,
-                cantidad: item.cantidad,
-                detalle:  `Surtido de ${item.cantidad} unidad(es). Existencia: ${existenciaActual} → ${nuevaExistencia}`
+                producto: dulce.nombre,
+                accion: 'Surtido',
+                cantidad: `+${item.cantidad} pz`,
+                fecha: new Date().toLocaleDateString('es-MX')
             });
 
             resultados.push({
-                producto:         dulce.nombre,
-                cantidadSurtida:  item.cantidad,
+                producto: dulce.nombre,
+                cantidadSurtida: item.cantidad,
                 existenciaActual: nuevaExistencia,
-                estado:           nuevoEstado
+                estado: nuevoEstado
             });
         }
 
@@ -359,7 +355,7 @@ app.post('/api/compras/confirmar', async (req, res) => {
 
 // ENDPOINTS DE HISTORIAL
 
-// GETlos movimientos
+// GET los movimientos
 app.get('/api/historial', async (req, res) => {
     try {
         const historial = await Historial.find({}, { _id: 0, __v: 0 }).sort({ fecha: -1 });
@@ -379,7 +375,7 @@ app.get('/api/historial/:tipo', async (req, res) => {
             return res.status(400).json({ error: `Tipo inválido. Usa: ${tiposValidos.join(', ')}` });
         }
 
-        const historial = await Historial.find({ tipo }, { _id: 0, __v: 0 }).sort({ fecha: -1 });
+        const historial = await Historial.find({ accion: tipo }, { _id: 0, __v: 0 }).sort({ fecha: -1 });
         res.json(historial);
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener historial' });
